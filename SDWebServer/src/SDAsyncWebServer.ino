@@ -64,19 +64,6 @@
 #include <SD.h>
 #include "NTP.hpp"
 
-// https://github.com/tzapu/WiFiManager/issues/1530
-typedef enum {
-  MY_HTTP_GET = 0b00000001,
-  MY_HTTP_POST = 0b00000010,
-  MY_HTTP_DELETE = 0b00000100,
-  MY_HTTP_PUT = 0b00001000,
-  MY_HTTP_PATCH = 0b00010000,
-  MY_HTTP_HEAD = 0b00100000,
-  MY_HTTP_OPTIONS = 0b01000000,
-  MY_HTTP_ANY = 0b01111111,
-} MyWebRequestMethod;
-
-
 #define DBG_OUTPUT_PORT Serial
  // USBSerial Serial Serial1 Serial2
 
@@ -115,9 +102,6 @@ GND
 #define LED_ORANGE_PIN     5  // D1 GPIO5 WeMos D1 Mini 
 #define LED_GREEN_PIN      4  // D2 GPIO4 WeMos D1 Mini 
 
-#define RXD               3
-#define TXD               1
-
 #elif defined(CONFIG_IDF_TARGET_ESP32S2)
 #warning "TARGET_ESP32S2"
 /*
@@ -135,9 +119,6 @@ https://github.com/Xinyuan-LilyGO/ESP32_S2
 #define LED_RED_PIN        2
 #define LED_ORANGE_PIN     3
 #define LED_GREEN_PIN      4
-
-#define RXD               40
-#define TXD               39
 
 #elif defined(CONFIG_IDF_TARGET_ESP32S3)
 #warning "TARGET_ESP32S3"
@@ -169,9 +150,6 @@ https://github.com/Xinyuan-LilyGO/ESP32_S2
 #define LED_GREEN_PIN 6
 #define LED_RGB_PIN 48 // GPIO 38  
 
-#define RXD 44
-#define TXD 43
-
 #elif defined(CONFIG_IDF_TARGET_ESP32C3)
 
 #define SD_PIN_SCK         3
@@ -184,8 +162,6 @@ https://github.com/Xinyuan-LilyGO/ESP32_S2
 #define LED_ORANGE_PIN     6
 #define LED_GREEN_PIN      7
 
-#define RXD               20
-#define TXD               21
 
 #elif defined(CONFIG_IDF_TARGET_ESP32C6)
 // https://github.com/wuxx/nanoESP32-C6
@@ -195,10 +171,10 @@ https://github.com/Xinyuan-LilyGO/ESP32_S2
 #define SD_PIN_MISO   20
 #define SD_PIN_CS     18
 
-//#define SD_PIN_SCK 19
-//#define SD_PIN_MOSI 18
-//#define SD_PIN_MISO 20
-//#define SD_PIN_CS 23
+#define SD_PIN_SCK 19
+#define SD_PIN_MOSI 18
+#define SD_PIN_MISO 20
+#define SD_PIN_CS 23
 
 #define PIN_NEOPIXEL  8
 #define BOOTPIN       9
@@ -206,9 +182,6 @@ https://github.com/Xinyuan-LilyGO/ESP32_S2
 #define LED_RED_PIN    4
 #define LED_ORANGE_PIN 5
 #define LED_GREEN_PIN  6
-
-#define RXD 17
-#define TXD 16
 
 
 #elif defined(CONFIG_IDF_TARGET_ESP32)
@@ -267,9 +240,6 @@ https://github.com/Xinyuan-LilyGO/ESP32_S2
 #define LED_RED_PIN        15
 #define LED_ORANGE_PIN     2
 #define LED_GREEN_PIN      32
-
-#define RXD               3
-#define TXD               1
 
 #endif
 
@@ -500,7 +470,7 @@ void setup(void){
   ArduinoOTA.begin();
 
   
-server.on("/list", MY_HTTP_GET, [](AsyncWebServerRequest *request)
+server.on("/list", AsyncWebRequestMethod::HTTP_GET, [](AsyncWebServerRequest *request)
     {
 #if defined(ESP8266)
         int cnt = 0;
@@ -557,7 +527,7 @@ server.on("/list", MY_HTTP_GET, [](AsyncWebServerRequest *request)
 #endif
       });
       
-server.on("/edit", MY_HTTP_PUT, [](AsyncWebServerRequest *request)
+server.on("/edit", AsyncWebRequestMethod::HTTP_PUT, [](AsyncWebServerRequest *request)
 {
   debugln("Create ");
   if (request->args() == 0)
@@ -586,7 +556,7 @@ server.on("/edit", MY_HTTP_PUT, [](AsyncWebServerRequest *request)
   request->send(200, "text/plain", ""); 
 });
 
-server.on("/edit", MY_HTTP_DELETE, [](AsyncWebServerRequest *request)
+server.on("/edit", AsyncWebRequestMethod::HTTP_DELETE, [](AsyncWebServerRequest *request)
 {
   debugln("Delete ");
   if (request->args() == 0)
@@ -611,7 +581,7 @@ server.on("/edit", MY_HTTP_DELETE, [](AsyncWebServerRequest *request)
   } 
 });
 
-server.on("/edit", MY_HTTP_POST, 
+server.on("/edit", AsyncWebRequestMethod::HTTP_POST, 
         [](AsyncWebServerRequest *request)
           {
             debugln("File upload completed " + request->url());
@@ -631,13 +601,13 @@ server.on("/edit", MY_HTTP_POST,
             } 
           }
     );
-    server.on("/", MY_HTTP_GET, [](AsyncWebServerRequest *request)
+    server.on("/", AsyncWebRequestMethod::HTTP_GET, [](AsyncWebServerRequest *request)
     { request->redirect("/index.html"); });
     
     server.onNotFound([](AsyncWebServerRequest *request)
     { 
         debugf("url NotFound %s , Method =%s\n", request->url().c_str(), request->methodToString());
-        if (request->method() == HTTP_GET)
+        if (request->method() == AsyncWebRequestMethod::HTTP_GET)
         {
             if (SD.exists(request->url())) // exists will give a error in the error log see: https://github.com/espressif/arduino-esp32/issues/7615
             {
@@ -656,7 +626,7 @@ server.on("/edit", MY_HTTP_POST,
                 request->redirect("/error404.html");
             }
         }
-        else if (request->method() == MY_HTTP_POST)
+        else if (request->method() == AsyncWebRequestMethod::HTTP_POST)
         {
             reply(request, 404, "text/html", error404_html, sizeof(error404_html) - 1);
         }
