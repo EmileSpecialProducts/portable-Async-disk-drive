@@ -348,6 +348,7 @@ function createTree(element, editor) {
         case "jpg":
         case "gif":
         case "ico":
+        case "bmp":
           return true;
       }
     }
@@ -432,7 +433,7 @@ function createEditor(element, file, lang, theme, type) {
         case "css":
         case "scss":
         case "php":
-        case "html":
+        case "html": lang = "html"; break;
         case "json":
         case "xml":
           lang = ext;
